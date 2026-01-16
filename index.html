@@ -312,27 +312,27 @@
         @media (max-width: 768px) {
             .modal-content {
                 flex-direction: column;
-                height: 70%;
-                /* Reduced from 90% */
-                width: 90%;
-                /* Ensure some side gaps */
+                height: 80%;
+                width: 95%;
                 max-width: 400px;
             }
 
             .fish-list {
                 width: 100%;
-                height: 30%;
+                height: 25%;
                 border-right: none;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
                 display: flex;
                 overflow-x: auto;
-                padding: 10px;
-                gap: 10px;
+                padding: 5px;
+                gap: 8px;
             }
 
             .fish-item {
-                width: 140px;
+                width: 110px;
                 flex-shrink: 0;
+                padding: 10px;
+                font-size: 13px;
                 flex-direction: column;
                 justify-content: center;
                 text-align: center;
@@ -340,27 +340,84 @@
 
             .fish-bio-panel {
                 width: 100%;
-                height: 70%;
-                padding: 20px;
+                height: 75%;
+                padding: 15px;
                 overflow-y: auto;
             }
 
             #closeGuideBtn {
                 display: block;
-                /* Show on mobile */
             }
 
             /* Mobile: Dock adjustments */
             .ui-dock {
                 bottom: 15px;
                 left: 15px;
-                width: 150px;
-                padding: 15px;
+                width: 130px;
+                padding: 12px;
+                gap: 8px;
+            }
+
+            .dock-header {
+                font-size: 9px;
+                margin-bottom: 2px;
             }
 
             .dock-btn {
-                padding: 8px 12px;
+                padding: 6px 10px;
                 font-size: 11px;
+                border-radius: 8px;
+                gap: 5px;
+            }
+
+            .dock-btn svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            /* Finding Dave Button Mobile */
+            #findingDaveBtn {
+                bottom: 15px;
+                right: 15px;
+                padding: 8px 16px;
+                font-size: 11px;
+                border-radius: 20px;
+                gap: 6px;
+            }
+
+            #findingDaveBtn svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            /* Tank HUD Mobile */
+            #tankHUD {
+                width: 230px;
+                padding: 15px;
+                top: 10px;
+                right: -270px;
+            }
+
+            #tankHUD.visible {
+                right: 10px;
+            }
+
+            .hud-header {
+                font-size: 12px;
+            }
+
+            .hud-row {
+                margin-bottom: 8px;
+                font-size: 11px;
+            }
+
+            .hud-slider {
+                width: 60px;
+            }
+
+            .hud-value {
+                font-size: 10px;
+                width: 30px;
             }
         }
 
