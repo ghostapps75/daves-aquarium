@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dave's Aquarium</title>
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://fishtank1.netlify.app/">
+    <meta property="og:title" content="Dave's Virtual Aquarium">
+    <meta property="og:description" content="A special 3D aquarium built just for Dave.">
+    <meta property="og:image" content="https://fishtank1.netlify.app/assets/bg.jpg">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background-color: #001e36;
+
+            /* 1. The Original Image */
+            background-image: url('assets/bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* --- 🌊 THE TINT LAYER --- */
+        #tint-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: rgba(0, 30, 54, 0.4);
+            pointer-events: none;
+        }
+
+        canvas {
+            display: block;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Legacy partyBtn styles removed */
+
+        /* FISH DIRECTORY UI */
+        /* Legacy directoryBtn styles removed */
+
+        #directoryBtn:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(1.05);
+        }
+
+        #directoryModal {
+            display: none;
+            /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: rgba(20, 20, 30, 0.9);
+            width: 800px;
+            max-width: 90%;
+            height: 500px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            font-family: 'Inter', sans-serif;
+            color: white;
+            position: relative;
+        }
+
+        /* Explicit Close Button (Mobile Only) */
+        #closeGuideBtn {
+            display: none;
+            /* Hidden on desktop */
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+        }
+
+        /* Directory List (Left) */
+        .fish-list {
+            width: 35%;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+        }
+
+        .fish-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .fish-item:hover,
+        .fish-item.active {
+            background: rgba(64, 224, 208, 0.2);
+            /* Turquoise tint */
+            border: 1px solid rgba(64, 224, 208, 0.4);
+        }
+
+        .fish-icon {
+            font-size: 20px;
+        }
+
+        /* Bio Card (Right) */
+        .fish-bio-panel {
+            width: 65%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(20, 20, 30, 0) 0%, rgba(0, 0, 0, 0.4) 100%);
+            overflow-y: auto;
+        }
+
+        .bio-image-placeholder {
+            width: 180px;
+            height: 180px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            margin-bottom: 20px;
+            object-fit: cover;
+            /* Ensure image covers the circle */
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 30px rgba(64, 224, 208, 0.3);
+        }
+
+        .bio-name {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #40e0d0;
+        }
+
+        .bio-species {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+
+        /* --- 💎 PREMIUM UI DOCK (Bottom-Left) --- */
+        .ui-dock {
+            position: fixed;
+            bottom: 25px;
+            left: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px) saturate(150%);
+            -webkit-backdrop-filter: blur(15px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1001;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            /* For shimmer */
+            width: 180px;
+        }
+
+        .ui-dock::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg,
+                    transparent 25%,
+                    rgba(255, 255, 255, 0.1) 50%,
+                    transparent 75%);
+            animation: shimmer 6s infinite linear;
+            pointer-events: none;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translate(-30%, -30%) rotate(0deg);
+            }
+
+            100% {
+                transform: translate(30%, 30%) rotate(0deg);
+            }
+        }
+
+        .dock-header {
+            font-family: 'Poppins', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            color: rgba(64, 224, 208, 0.8);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        /* PREMIUM BUTTON STYLES */
+        .dock-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            font-size: 13px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .dock-btn:hover {
+            background: rgba(64, 224, 208, 0.2);
+            border-color: rgba(64, 224, 208, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(64, 224, 208, 0.2);
+        }
+
+        .dock-btn:active {
+            transform: translateY(0);
+        }
+
+        .dock-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        /* Mode-specific overrides */
+        #partyBtn.active {
+            background: linear-gradient(135deg, #ff0066 0%, #ff00ff 100%);
+            border: none;
+            box-shadow: 0 0 20px rgba(255, 0, 102, 0.4);
+        }
+
+        /* Hide Close Buttons (User Request) */
+        .close-btn {
+            display: none !important;
+        }
+
+        .bio-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px 30px;
+            border-radius: 12px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .bio-text {
+            font-size: 16px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.9);
+            max-width: 80%;
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                flex-direction: column;
+                height: 70%;
+                /* Reduced from 90% */
+                width: 90%;
+                /* Ensure some side gaps */
+                max-width: 400px;
+            }
+
+            .fish-list {
+                width: 100%;
+                height: 30%;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                display: flex;
+                overflow-x: auto;
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .fish-item {
+                width: 140px;
+                flex-shrink: 0;
+                flex-direction: column;
+                justify-content: center;
+                text-align: center;
+            }
+
+            .fish-bio-panel {
+                width: 100%;
+                height: 70%;
+                padding: 20px;
+                overflow-y: auto;
+            }
+
+            #closeGuideBtn {
+                display: block;
+                /* Show on mobile */
+            }
+
+            /* Mobile: Dock adjustments */
+            .ui-dock {
+                bottom: 15px;
+                left: 15px;
+                width: 150px;
+                padding: 15px;
+            }
+
+            .dock-btn {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+        }
+
+        /* HUD Overlay (Hidden by Default) */
+        #tankHUD {
+            position: fixed;
+            top: 20px;
+            right: -320px;
+            /* Hidden off-screen */
+            width: 280px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s ease-in-out;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #tankHUD.visible {
+            right: 20px;
+            /* Slide in */
+        }
+
+        .hud-header {
+            font-size: 14px;
+            font-weight: 700;
+            color: #40e0d0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 5px;
+        }
+
+        .hud-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .hud-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .hud-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Minimal Inputs */
+        .hud-select {
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 4px;
+            border-radius: 5px;
+            font-size: 12px;
+            width: 100px;
+        }
+
+        .hud-slider {
+            width: 80px;
+            height: 4px;
+            accent-color: #40e0d0;
+            border-radius: 2px;
+        }
+
+        .hud-value {
+            font-size: 12px;
+            color: #40e0d0;
+            width: 20px;
+            text-align: right;
+        }
+
+        /* Checkbox */
+        .hud-check {
+            accent-color: #40e0d0;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .hud-reset {
+            margin-top: 20px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            color: #40e0d0;
+            border: 1px solid rgba(64, 224, 208, 0.3);
+            padding: 8px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .hud-reset:hover {
+            background: rgba(64, 224, 208, 0.2);
+            border-color: #40e0d0;
+        }
+
+        /* --- 🔍 FINDING DAVE FLOATING BUTTON --- */
+        #findingDaveBtn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px) saturate(150%);
+            -webkit-backdrop-filter: blur(15px) saturate(150%);
+            color: #ff9900;
+            /* Clownfish Orange */
+            border: 2px solid rgba(255, 153, 0, 0.5);
+            padding: 12px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            z-index: 2000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: none;
+            /* Shown via JS delay */
+            opacity: 0;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        #findingDaveBtn:hover {
+            background: rgba(255, 153, 0, 0.2);
+            border-color: #ff9900;
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 12px 40px rgba(255, 153, 0, 0.3);
+        }
+
+        #findingDaveBtn:active {
+            transform: scale(0.95);
+        }
+
+        #findingDaveBtn.visible {
+            display: flex;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div id="tint-layer"></div>
+
+    <div class="ui-dock">
+        <div class="dock-header">Tank Systems</div>
+        <button id="tankControlsBtn" class="dock-btn">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.97 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.97 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
+            </svg>
+            Controls
+        </button>
+        <button id="directoryBtn" class="dock-btn">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+            </svg>
+            Fish Guide
+        </button>
+        <button id="partyBtn" class="dock-btn">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M9.5,3A2,2 0 0,1 11.5,5A2,2 0 0,1 9.5,7A2,2 0 0,1 7.5,5A2,2 0 0,1 9.5,3M5,8C6.11,8 7,8.9 7,10C7,11.11 6.11,12 5,12C3.9,12 3,11.11 3,10C3,8.9 3.9,8 5,8M16,2.5C17.11,2.5 18,3.39 18,4.5C18,5.61 17.11,6.5 16,6.5C14.89,6.5 14,5.61 14,4.5C14,3.39 14.89,2.5 16,2.5M19,9A3,3 0 0,1 22,12A3,3 0 0,1 19,15A3,3 0 0,1 16,12A3,3 0 0,1 19,9M11,13A2.5,2.5 0 0,1 13.5,15.5A2.5,2.5 0 0,1 11,18A2.5,2.5 0 0,1 8.5,15.5A2.5,2.5 0 0,1 11,13M3,16A3.5,3.5 0 0,1 6.5,19.5A3.5,3.5 0 0,1 3,23A3.5,3.5 0 0,1 -0.5,19.5A3.5,3.5 0 0,1 3,16M15,19A2,2 0 0,1 17,21A2,2 0 0,1 15,23A2,2 0 0,1 13,21A2,2 0 0,1 15,19Z" />
+            </svg>
+            Party Mode
+        </button>
+    </div>
+
+    <button id="findingDaveBtn">
+        <svg style="width:20px; height:20px; fill:currentColor;" viewBox="0 0 24 24">
+            <path
+                d="M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z" />
+        </svg>
+        Finding Dave
+    </button>
+    <!-- Fish Directory Modal -->
+    <div id="directoryModal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeDir">&times;</span>
+
+            <div class="fish-list" id="fishList">
+                <!-- Populated by JS -->
+            </div>
+
+            <div class="fish-bio-panel">
+                <img class="bio-image-placeholder" id="bioImage" src="assets/sasha-bio.png" alt="Fish Portrait">
+                <div class="bio-name" id="bioName">Select a Fish</div>
+                <div class="bio-species" id="bioSpecies">Welcome to the Tank</div>
+
+                <div class="bio-stats" id="bioStats" style="display:none;">
+                    <!-- Stats go here -->
+                </div>
+
+                <div class="bio-text" id="bioText">
+                    Click on a name from the list on the left to learn more about our aquatic friends!
+                </div>
+
+                <button id="closeGuideBtn">Close Guide</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tankHUD">
+        <div class="hud-header">Tank Controls</div>
+        <div id="hudContent"></div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // 1. Setup Scene
+        const scene = new THREE.Scene();
+        const chillFog = new THREE.Fog(0x001e36, 5, 20); // Fog adjusted closer for new view
+        scene.fog = chillFog;
+
+        // 2. Camera (UPDATED for Zoomed-In Look)
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // Changed from (0, 2, 9) to (0, 1, 6) -> Closer and more eye-level
+        camera.position.set(0, 1, 6);
+
+        // 3. Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        document.body.appendChild(renderer.domElement);
+
+        // --- STANDARD LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+        scene.add(ambientLight);
+        const topLight = new THREE.DirectionalLight(0xffffff, 3);
+        topLight.position.set(5, 10, 7);
+        scene.add(topLight);
+        const frontLight = new THREE.DirectionalLight(0xffffff, 1);
+        frontLight.position.set(0, 0, 10);
+        scene.add(frontLight);
+
+        // --- RAVE RIG ---
+        const raveGroup = new THREE.Group();
+        scene.add(raveGroup);
+        raveGroup.visible = false;
+
+        // A. DISCO BALL
+        const discoBallGeo = new THREE.SphereGeometry(1.5, 32, 32);
+        const discoBallMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            roughness: 0.0,
+            metalness: 1.0,
+            reflectivity: 1.0,
+            clearcoat: 1.0,
+            emissive: 0x111111,
+            envMapIntensity: 5.0
+        });
+        const discoBall = new THREE.Mesh(discoBallGeo, discoBallMat);
+        discoBall.position.set(0, 8, 0);
+        raveGroup.add(discoBall);
+
+        // B. FILL & SPOT LIGHTS
+        const raveHemi = new THREE.HemisphereLight(0xff00ff, 0x00ffff, 0.8);
+        raveGroup.add(raveHemi);
+
+        function createSpotLight(color, xPos, zPos) {
+            const spot = new THREE.SpotLight(color, 2000);
+            spot.angle = 0.8;
+            spot.penumbra = 0.5;
+            spot.position.set(xPos, 5, zPos);
+            spot.target = discoBall;
+            raveGroup.add(spot);
+            return spot;
+        }
+        createSpotLight(0xff00ff, -10, 10);
+        createSpotLight(0x00ffff, 10, 10);
+        createSpotLight(0xffff00, 0, -10);
+
+        // ============================================
+        // ⚙️ TANK CONTROLS TOGGLE
+        // ============================================
+        const tankControlsBtn = document.getElementById('tankControlsBtn');
+        const tankHUD = document.getElementById('tankHUD');
+
+        tankControlsBtn.onclick = (e) => {
+            e.stopPropagation(); // Prevent window click from closing it immediately
+            tankHUD.classList.toggle('visible');
+        };
+
+        // --- MATERIALS ---
+        const raveMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            metalness: 1.0,
+            roughness: 0.05,
+            ior: 2.5,
+            reflectivity: 1.0,
+            clearcoat: 1.0,
+            emissive: 0x222244,
+            emissiveIntensity: 0.2
+        });
+        raveMaterial.envMapIntensity = 3.0;
+
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        pmremGenerator.compileEquirectangularShader();
+
+        new THREE.TextureLoader().load('assets/bg.jpg', function (texture) {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            texture.colorSpace = THREE.SRGBColorSpace;
+            raveMaterial.envMap = texture;
+            discoBallMat.envMap = texture;
+            scene.environment = texture;
+            raveMaterial.needsUpdate = true;
+            discoBallMat.needsUpdate = true;
+        });
+
+        // --- 5. PARTICLES ---
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 1000;
+        const posArray = new Float32Array(particlesCount * 3);
+        for (let i = 0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 30;
+        }
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.05, color: 0xffffff, transparent: true, opacity: 0.6
+        });
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        // --- 6. FISH SYSTEM ---
+        const loader = new GLTFLoader();
+        const fishSchool = [];
+        const raveSquad = [];
+
+        function addFish(fileName, scale, speed, timeOffset, yOffset, isRaveOnly = false) {
+            loader.load(`assets/${fileName}`, function (gltf) {
+                const fish = gltf.scene;
+                fish.scale.set(scale, scale, scale);
+
+                // Check if this is Sasha
+                const isSasha = fileName.includes('sasha');
+
+                if (gltf.animations && gltf.animations.length > 0) {
+                    const mixer = new THREE.AnimationMixer(fish);
+                    const action = mixer.clipAction(gltf.animations[0]);
+                    action.play();
+                    fish.userData.mixer = mixer;
+                }
+
+                const box = new THREE.Box3().setFromObject(fish);
+                const center = box.getCenter(new THREE.Vector3());
+                fish.position.sub(center);
+
+                if (isRaveOnly) {
+                    fish.visible = false;
+                    raveSquad.push(fish);
+                } else {
+                    fishSchool.push(fish);
+                }
+                scene.add(fish);
+
+                // --- SPECIAL MATERIAL FIXES ---
+                if (fileName === 'linguiniii.glb') {
+                    // Fix for "Black Back" issue: Apply red emissive to fill in dark areas
+                    fish.traverse((child) => {
+                        if (child.isMesh) {
+                            // Use a soft fabric-like roughness
+                            child.material.roughness = 1.0;
+                            child.material.metalness = 0.0;
+                            // Add red glow to cover black pixels
+                            child.material.emissive = new THREE.Color(0xaa2222);
+                            child.material.emissiveIntensity = 0.4;
+                            // Ensure double sided to prevent backface culling holes
+                            child.material.side = THREE.DoubleSide;
+                        }
+                    });
+                }
+
+                // Store Data
+                fish.userData.speed = speed;
+                fish.userData.offset = timeOffset;
+                fish.userData.yBase = yOffset;
+                fish.userData.isRaveOnly = isRaveOnly;
+                fish.userData.isSasha = isSasha;
+                fish.userData.originalMaterial = null;
+
+            }, undefined, function (error) {
+                console.error(`Could not load ${fileName}:`, error);
+            });
+        }
+
+        // ============================================
+        // 🛠️ TANK MANAGER LOGIC
+        // ============================================
+
+        // Default Config
+        const defaultFishConfig = {
+            "Hammerhead Shark": { active: true, count: 1, min: 1, max: 8 },
+            "Shark": { active: true, count: 1, min: 1, max: 8 },
+            "Manta": { active: true, count: 1, min: 1, max: 8 },
+            "Tetra": { active: true, count: 4, min: 1, max: 8 },
+            "Squirrelfish": { active: true, count: 2, min: 1, max: 8 },
+            "Angelfish": { active: true, count: 1, min: 1, max: 8 }
+        };
+
+        let fishConfig = JSON.parse(JSON.stringify(defaultFishConfig));
+
+        const fishBios = {
+            "Hammerhead Shark": {
+                species: "Sphyrna mokarran",
+                icon: "🔨",
+                image: "assets/sledgehammer-bio.png",
+                stats: { "Head Shape": "Hammer", "Vision": "360°", "Attitude": "Solid" },
+                bio: "Hammerhead Shark is a Great Hammerhead with a great attitude. He uses his wide head to scan for electromagnetic signals and bad vibes, effectively filtering both out of the tank."
+            },
+            "Nemo Dave": {
+                species: "Davidus Financialis",
+                icon: "�",
+                image: "assets/nemo-dave1.PNG",
+                stats: { "Focus": "High", "Spreadsheets": "Missing", "Goal": "The Bank" },
+                bio: "Has anyone seen his spreadsheet? A very serious clownfish who is deeply focused on aquatic asset management. Just keep swimming... directly to the bank."
+            },
+            "Shark": {
+                species: "Selachimorpha",
+                icon: "🦈",
+                image: "assets/shark-bio.png",
+                stats: { "Speed": "Fast", "Teeth": "Many", "Vibe": "Misunderstood" },
+                bio: "The tank's resident muscle. He looks tough, but mostly he just circles around looking for snacks. He's actually quite friendly if you don't make sudden movements."
+            },
+            "Manta": {
+                species: "Mobula alfredi",
+                icon: "🪁",
+                image: "assets/manta-bio.png",
+                stats: { "Wingspan": "Impressive", "Gliding": "10/10", "Grace": "High" },
+                bio: "The Manta Ray is the glider of the group. She prefers the wide open spaces of the upper tank and dreams of the open ocean."
+            },
+            "Tetra": {
+                species: "Paracheirodon",
+                icon: "🐟",
+                image: "assets/tetra-bio.png",
+                stats: { "Count": "Many", "Size": "Small", "Schooling": "Yes" },
+                bio: "The Tetras are the background dancers of the aquarium. They move as one and add a splash of neon color to the scene."
+            },
+            "Squirrelfish": {
+                species: "Holocentridae",
+                icon: "🐠",
+                image: "assets/squirrelfish-bio.png",
+                stats: { "Eyes": "Huge", "Color": "Red", "Night Vision": "Yes" },
+                bio: "With their giant eyes, the Squirrelfish see everything. They are excellent at finding food in low light and judging the other fish silently."
+            },
+            "Angelfish": {
+                species: "Pterophyllum",
+                icon: "👼",
+                image: "assets/angelfish-bio.png",
+                stats: { "Shape": "Triangle", "Elegance": "Maximum", "Attitude": "Royalty" },
+                bio: "The Angelfish believe they own the tank. They swim with a regal slow-motion energy that suggests they are better than everyone else."
+            }
+        };
+
+        function clearTank() {
+            // Remove existing fish (not Rave Squad)
+            for (const fish of fishSchool) {
+                scene.remove(fish);
+                // disposing logic if memory was an issue, but for now just removing from scene
+            }
+            fishSchool.length = 0; // Clear array
+        }
+
+        function populateTank() {
+            // 1. Shark
+            if (fishConfig["Shark"].active) {
+                const count = fishConfig["Shark"].count;
+                for (let i = 0; i < count; i++) {
+                    addFish('shark.glb', 1.8, 0.52, 2 + i, 2.0 + (Math.random() - 0.5));
+                }
+            }
+
+            // 2. Manta
+            if (fishConfig["Manta"].active) {
+                const count = fishConfig["Manta"].count;
+                for (let i = 0; i < count; i++) {
+                    addFish('manta.glb', 2.5, 0.12, 3 + i, -3.5 + (Math.random() - 0.5));
+                }
+            }
+
+            // 3. Tetra
+            if (fishConfig["Tetra"].active) {
+                const count = fishConfig["Tetra"].count;
+                for (let i = 0; i < count; i++) {
+                    addFish('tetra.glb', 1.0, 0.62, i * 0.5, (Math.random() - 0.5) * 2);
+                }
+            }
+
+            // 4. Squirrelfish
+            if (fishConfig["Squirrelfish"].active) {
+                const count = fishConfig["Squirrelfish"].count;
+                for (let i = 0; i < count; i++) {
+                    addFish('squirrelfish.glb', 1.4, 0.27, 2 + i, -1.5 + (Math.random() - 0.5));
+                }
+            }
+
+            // 5. Angelfish
+            if (fishConfig["Angelfish"].active) {
+                const count = fishConfig["Angelfish"].count;
+                for (let i = 0; i < count; i++) {
+                    addFish('angelfish.glb', 1.3, 0.19, 1 + i, -0.5 + (Math.random() - 0.5));
+                }
+            }
+
+            // 6. Hammerhead Shark
+            if (fishConfig["Hammerhead Shark"].active) {
+                const count = fishConfig["Hammerhead Shark"].count;
+                for (let i = 0; i < count; i++) {
+                    addFish('sledgehammer.glb', 2.0, 0.35, i, 3.0 + (Math.random() - 0.5));
+                }
+            }
+        }
+
+        // Global state for Nemo Dave
+        let nemoDaveEntity = null;
+
+        function spawnNemoDave() {
+            const btn = document.getElementById('findingDaveBtn');
+            if (nemoDaveEntity) return; // Only one
+
+            // Majestic Speed and Scale
+            loader.load('assets/dave-fish-optimized.glb', function (gltf) {
+                const fish = gltf.scene;
+                fish.scale.set(1.8, 1.8, 1.8);
+
+                if (gltf.animations && gltf.animations.length > 0) {
+                    const mixer = new THREE.AnimationMixer(fish);
+                    const action = mixer.clipAction(gltf.animations[0]);
+                    action.play();
+                    fish.userData.mixer = mixer;
+                }
+
+                const box = new THREE.Box3().setFromObject(fish);
+                const center = box.getCenter(new THREE.Vector3());
+                fish.position.sub(center);
+
+                // Majestic data
+                fish.userData.speed = 0.15;
+                fish.userData.offset = Math.random() * 10;
+                fish.userData.yBase = 1.0;
+                fish.userData.sideOffset = 0;
+
+                nemoDaveEntity = fish;
+                scene.add(fish);
+
+                // Hide button immediately
+                btn.style.opacity = '0';
+                setTimeout(() => { btn.classList.remove('visible'); }, 300);
+            });
+        }
+
+        // Initialize Tank
+        populateTank();
+
+        // Fade in the Dave button after 3 seconds
+        setTimeout(() => {
+            const daveBtn = document.getElementById('findingDaveBtn');
+            if (daveBtn) {
+                daveBtn.classList.add('visible');
+                // Trigger reflow for transition
+                daveBtn.offsetHeight;
+                daveBtn.style.opacity = '1';
+                daveBtn.onclick = spawnNemoDave;
+            }
+        }, 3000);
+
+        let tankSpeedScale = 1.0;
+        let masterTime = 0;
+
+        // --- UI RENDERING ---
+        const mgrModal = document.querySelector('.manager-modal-wrapper'); // We need to fix the ID selector
+        // * Correction: I duplicated the ID directoryModal in the HTML. I should set the second one to 'managerModal'
+        //   I will do that via JS reference or fix HTML in next step. Wait, let's fix it here.
+        //   Actually, in the HTML replacement block above I set the second div ID to 'directoryModal' by mistake.
+        //   I need to be careful. I should rely on class or fix the ID.
+        //   Let's assume I fix the ID in the HTML block *before* this runs? No, tool runs same time.
+        //   SAFE BET: Use document.getElementsByClassName('close-btn')[1] etc.
+
+        // RE-FIXING HTML IN PREVIOUS BLOCK via "target content" approach ensures I change it correctly? 
+        // No, I'll rely on a second Replace call to fix the ID if needed, or better:
+        // * I will access the wrapper by class `manager-modal-wrapper` which I added. *
+
+        // --- HUD RENDERING ---
+        function renderHUD() {
+            const container = document.getElementById('hudContent');
+            if (!container) return; // Safety check
+            container.innerHTML = '';
+
+            // --- ⏱️ GLOBAL TANK SPEED ---
+            const speedRow = document.createElement('div');
+            speedRow.className = 'hud-row';
+            speedRow.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+            speedRow.style.paddingBottom = '10px';
+            speedRow.style.marginBottom = '15px';
+            speedRow.innerHTML = `
+                <div class="hud-label"><span>⏱️</span> Tank Speed</div>
+                <div class="hud-controls">
+                    <input type="range" id="globalSpeedSlider" min="0.5" max="1.5" step="0.05" value="${tankSpeedScale}">
+                    <span class="hud-value" id="val-globalSpeed">${tankSpeedScale}x</span>
+                </div>
+            `;
+            container.appendChild(speedRow);
+
+            Object.keys(fishConfig).forEach(key => {
+                const conf = fishConfig[key];
+                // No fish are hidden in Dave's version
+
+
+                const row = document.createElement('div');
+                row.className = 'hud-row';
+
+                // Label
+                let icon = fishBios[key] ? fishBios[key].icon : '🐟';
+                let html = `<div class="hud-label"><span>${icon}</span> ${key}</div>`;
+                html += `<div class="hud-controls">`;
+
+                // Toggle + Slider for all fish
+                // Checkbox
+                html += `<input type="checkbox" class="hud-check" data-fish="${key}" ${conf.active ? 'checked' : ''}>`;
+
+                if (conf.active && conf.min !== undefined && conf.max !== undefined) {
+                    html += `
+                    <input type="range" class="hud-slider" data-fish="${key}" min="${conf.min}" max="${conf.max}" value="${conf.count}">
+                    <span class="hud-value" id="val-${key}">${conf.count}</span>
+                    `;
+                }
+
+                html += `</div>`;
+                row.innerHTML = html;
+                container.appendChild(row);
+            });
+
+            // Bind Events (Real-time updates)
+
+            // Checkboxes
+            container.querySelectorAll('.hud-check').forEach(el => {
+                el.onchange = (e) => {
+                    fishConfig[e.target.dataset.fish].active = e.target.checked;
+                    renderHUD(); // Re-render to show/hide slider
+                    clearTank(); populateTank();
+                };
+            });
+
+            // Sliders
+            container.querySelectorAll('.hud-slider').forEach(el => {
+                el.oninput = (e) => {
+                    const fish = e.target.dataset.fish;
+                    const val = parseInt(e.target.value);
+                    fishConfig[fish].count = val;
+                    document.getElementById(`val-${fish}`).innerText = val;
+                };
+                el.onchange = (e) => {
+                    // Update physics on release to save performance
+                    clearTank(); populateTank();
+                }
+            });
+
+            // Global Speed Event
+            const speedSlider = document.getElementById('globalSpeedSlider');
+            if (speedSlider) {
+                speedSlider.oninput = (e) => {
+                    tankSpeedScale = parseFloat(e.target.value);
+                    document.getElementById('val-globalSpeed').innerText = tankSpeedScale + 'x';
+                };
+            }
+
+            // --- 🔄 RESET BUTTON ---
+            const resetBtn = document.createElement('button');
+            resetBtn.className = 'hud-reset';
+            resetBtn.innerText = 'Reset to Defaults';
+            resetBtn.onclick = () => {
+                fishConfig = JSON.parse(JSON.stringify(defaultFishConfig));
+                tankSpeedScale = 1.0;
+
+                // Nemo Dave Reset
+                if (nemoDaveEntity) {
+                    scene.remove(nemoDaveEntity);
+                    nemoDaveEntity = null;
+                }
+                const fBtn = document.getElementById('findingDaveBtn');
+                if (fBtn) {
+                    fBtn.classList.add('visible');
+                    fBtn.style.opacity = '1';
+                }
+
+                renderHUD();
+                clearTank();
+                populateTank();
+            };
+            container.appendChild(resetBtn);
+        }
+
+        renderHUD();
+
+        const dirBtn = document.getElementById('directoryBtn');
+        const dirModal = document.getElementById('directoryModal');
+        // const closeBtn = document.querySelector('.close-btn'); <-- Conflict. Changed ID in HTML
+        const closeDir = document.getElementById('closeDir');
+        const fishList = document.getElementById('fishList');
+
+        // Populate List
+        Object.keys(fishBios).forEach(name => {
+            const item = document.createElement('div');
+            item.className = 'fish-item';
+            item.innerHTML = `<span class="fish-icon">${fishBios[name].icon}</span> ${name}`;
+            item.onclick = function () {
+                showBio(name);
+                document.querySelectorAll('.fish-item').forEach(el => el.classList.remove('active'));
+                this.classList.add('active');
+            };
+            fishList.appendChild(item);
+        });
+
+        function showBio(name) {
+            const data = fishBios[name];
+            document.getElementById('bioImage').src = data.image; // Update Image Source
+            document.getElementById('bioName').innerText = name;
+            document.getElementById('bioSpecies').innerText = data.species;
+            document.getElementById('bioText').innerText = data.bio;
+
+            const statsContainer = document.getElementById('bioStats');
+            statsContainer.style.display = 'flex';
+            statsContainer.innerHTML = '';
+
+
+            for (const [key, value] of Object.entries(data.stats)) {
+                const div = document.createElement('div');
+                div.className = 'stat-item';
+                div.innerHTML = `<span class="stat-label">${key}</span><span class="stat-value">${value}</span>`;
+                statsContainer.appendChild(div);
+            }
+        }
+
+        // Open/Close Logic
+        if (dirBtn) {
+            dirBtn.onclick = (e) => {
+                e.stopPropagation(); // Prevent immediate close
+                dirModal.style.display = 'flex';
+                if (document.getElementById('bioName').innerText === 'Select a Fish') showBio('Hammerhead Shark');
+            };
+        }
+
+        // Explicit Close Button Logic
+        const closeGuideBtn = document.getElementById('closeGuideBtn');
+        if (closeGuideBtn) {
+            closeGuideBtn.onclick = (e) => {
+                e.stopPropagation();
+                dirModal.style.display = 'none';
+            }
+        }
+
+        // Removed closeDir click listener (No X button)
+
+        // CLICK OUTSIDE LOGIC (Universal)
+        window.onclick = (e) => {
+            // 1. Close Directory Modal if clicking outside content
+            if (e.target == dirModal) {
+                dirModal.style.display = 'none';
+            }
+
+            // 2. Close Tank HUD if clicking outside HUD AND not on the toggle button
+            // using .closest() to check if click was inside the HUD
+            if (tankHUD.classList.contains('visible') &&
+                !e.target.closest('#tankHUD') &&
+                e.target !== tankControlsBtn) {
+                tankHUD.classList.remove('visible');
+            }
+        };
+
+        // ============================================
+        // 🎛️ MODE SWITCHING
+        // ============================================
+        let isPartyMode = false;
+        const btn = document.getElementById('partyBtn');
+
+        btn.addEventListener('click', () => {
+            isPartyMode = !isPartyMode;
+
+            if (isPartyMode) {
+                btn.classList.add('active');
+                btn.innerHTML = `
+                    <svg viewBox="0 0 24 24"><path d="M9.5,3A2,2 0 0,1 11.5,5A2,2 0 0,1 9.5,7A2,2 0 0,1 7.5,5A2,2 0 0,1 9.5,3M5,8C6.11,8 7,8.9 7,10C7,11.11 6.11,12 5,12C3.9,12 3,11.11 3,10C3,8.9 3.9,8 5,8M16,2.5C17.11,2.5 18,3.39 18,4.5C18,5.61 17.11,6.5 16,6.5C14.89,6.5 14,5.61 14,4.5C14,3.39 14.89,2.5 16,2.5M19,9A3,3 0 0,1 22,12A3,3 0 0,1 19,15A3,3 0 0,1 16,12A3,3 0 0,1 19,9M11,13A2.5,2.5 0 0,1 13.5,15.5A2.5,2.5 0 0,1 11,18A2.5,2.5 0 0,1 8.5,15.5A2.5,2.5 0 0,1 11,13M3,16A3.5,3.5 0 0,1 6.5,19.5A3.5,3.5 0 0,1 3,23A3.5,3.5 0 0,1 -0.5,19.5A3.5,3.5 0 0,1 3,16M15,19A2,2 0 0,1 17,21A2,2 0 0,1 15,23A2,2 0 0,1 13,21A2,2 0 0,1 15,19Z" /></svg>
+                    CHILL MODE
+                `;
+                scene.fog = new THREE.Fog(0x220033, 10, 40);
+                raveGroup.visible = true;
+                // ... (rest is same)
+
+                const allFish = [...fishSchool, ...raveSquad];
+                allFish.forEach(fish => {
+                    if (fish.userData.isRaveOnly) fish.visible = true;
+                    fish.traverse((child) => {
+                        if (child.isMesh) {
+                            if (!child.userData.originalMaterial) child.userData.originalMaterial = child.material;
+                            const myRaveMat = raveMaterial.clone();
+                            const hue = Math.random();
+                            myRaveMat.color.setHSL(hue, 0.8, 0.5);
+                            myRaveMat.emissive.setHSL(hue, 1.0, 0.1);
+                            child.material = myRaveMat;
+                        }
+                    });
+                });
+
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = `
+                    <svg viewBox="0 0 24 24"><path d="M9.5,3A2,2 0 0,1 11.5,5A2,2 0 0,1 9.5,7A2,2 0 0,1 7.5,5A2,2 0 0,1 9.5,3M5,8C6.11,8 7,8.9 7,10C7,11.11 6.11,12 5,12C3.9,12 3,11.11 3,10C3,8.9 3.9,8 5,8M16,2.5C17.11,2.5 18,3.39 18,4.5C18,5.61 17.11,6.5 16,6.5C14.89,6.5 14,5.61 14,4.5C14,3.39 14.89,2.5 16,2.5M19,9A3,3 0 0,1 22,12A3,3 0 0,1 19,15A3,3 0 0,1 16,12A3,3 0 0,1 19,9M11,13A2.5,2.5 0 0,1 13.5,15.5A2.5,2.5 0 0,1 11,18A2.5,2.5 0 0,1 8.5,15.5A2.5,2.5 0 0,1 11,13M3,16A3.5,3.5 0 0,1 6.5,19.5A3.5,3.5 0 0,1 3,23A3.5,3.5 0 0,1 -0.5,19.5A3.5,3.5 0 0,1 3,16M15,19A2,2 0 0,1 17,21A2,2 0 0,1 15,23A2,2 0 0,1 13,21A2,2 0 0,1 15,19Z" /></svg>
+                    PARTY MODE
+                `;
+                document.body.style.filter = "none";
+                scene.fog = chillFog;
+                ambientLight.intensity = 1.5;
+                topLight.intensity = 3;
+                frontLight.intensity = 1;
+                raveGroup.visible = false;
+
+                const allFish = [...fishSchool, ...raveSquad];
+                allFish.forEach(fish => {
+                    if (fish.userData.isRaveOnly) fish.visible = false;
+                    fish.traverse((child) => {
+                        if (child.isMesh && child.userData.originalMaterial) {
+                            child.material = child.userData.originalMaterial;
+                        }
+                    });
+                });
+            }
+        });
+
+        // 7. Animation Loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            masterTime += delta * tankSpeedScale;
+
+            if (isPartyMode) {
+                discoBall.rotation.y += 0.05 * tankSpeedScale;
+                discoBall.rotation.z = Math.sin(masterTime) * 0.2;
+                particlesMaterial.opacity = 0.5 + Math.sin(masterTime * 20) * 0.3;
+                particlesMaterial.size = 0.08 + Math.sin(masterTime * 10) * 0.03;
+            }
+
+            particlesMesh.rotation.y = masterTime * 0.05;
+            particlesMesh.position.y = Math.sin(masterTime * 0.2) * 0.5;
+
+            const allFish = [...fishSchool, ...raveSquad];
+            if (nemoDaveEntity) allFish.push(nemoDaveEntity);
+
+            allFish.forEach(fish => {
+                if (!fish.visible) return;
+
+                if (fish.userData.mixer) {
+                    fish.userData.mixer.update(delta * tankSpeedScale);
+                }
+
+                const data = fish.userData;
+
+                // --- 🌟 SASHA'S HERO LOGIC 🌟 ---
+                if (data.isSasha) {
+                    // This logic is currently not used as Sasha is removed from Dave's Tank
+                    const driftX = Math.sin(masterTime * 0.5) * 2.0;
+                    const driftY = Math.sin(masterTime * 0.8) * 0.5;
+                    fish.position.set(driftX, driftY, 0);
+                    fish.rotation.y = Math.sin(masterTime * 0.3) * 0.5;
+
+                } else {
+                    const time = (masterTime * data.speed) + data.offset;
+                    const nextT = time + 0.1;
+
+                    const x = Math.sin(time) * 7.0;
+                    const z = Math.sin(time * 2) * 4.5;
+                    const y = Math.sin(time * 1.5) * 1.0 + data.yBase;
+
+                    const nextX = Math.sin(nextT) * 7.0;
+                    const nextZ = Math.sin(nextT * 2) * 4.5;
+                    const nextY = Math.sin(nextT * 1.5) * 1.0 + data.yBase;
+
+                    fish.position.set(x, y, z);
+                    fish.lookAt(nextX, nextY, nextZ);
+                }
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.minDistance = 2; // Allow user to zoom in even more if they want
+        controls.maxDistance = 15;
+        controls.maxPolarAngle = Math.PI / 2 - 0.1;
+        controls.enablePan = false;
+
+        function adjustCameraForMobile() {
+            const aspect = window.innerWidth / window.innerHeight;
+            camera.aspect = aspect;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            // UPDATED: Logic to keep the zoomed-in feel on mobile too
+            if (aspect < 1) {
+                camera.position.z = 10; // Closer mobile default
+            } else {
+                camera.position.z = 6;  // Closer desktop default
+            }
+        }
+        adjustCameraForMobile();
+        window.addEventListener('resize', adjustCameraForMobile);
+
+        animate();
+    </script>
+</body>
+
+</html>
