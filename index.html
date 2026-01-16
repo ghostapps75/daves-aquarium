@@ -689,12 +689,17 @@
         camera.position.set(0, 1, 6);
 
         // 3. Renderer
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-
-        // CORPO DEVICE FIX: Cap pixel ratio to 1.0 to prevent crash on older mobile/corporate devices
-        const pixelRatio = window.devicePixelRatio;
         const isMobile = window.innerWidth <= 768; // Simple check matching CSS
+        const pixelRatio = window.devicePixelRatio;
 
+        // PERFORMANCE: Disable antialiasing on mobile to save significant GPU resources
+        const renderer = new THREE.WebGLRenderer({
+            antialias: !isMobile,
+            alpha: true,
+            powerPreference: "high-performance"
+        });
+
+        // CORPO/SAFARI FIX: Cap pixel ratio to 1.0 to prevent crash on older mobile/corporate devices
         // If mobile, hard cap at 1.0 to save massive GPU power
         renderer.setPixelRatio(isMobile ? 1.0 : Math.min(pixelRatio, 2));
 
@@ -1406,8 +1411,16 @@
                 camera.position.z = 6;  // Closer desktop default
             }
         }
-        adjustCameraForMobile();
-        window.addEventListener('resize', adjustCameraForMobile);
+        adjustCameraForMobile(); // Initial call
+
+        // SAFARI CRASH PREVENTER: Only resize if WIDTH changes (ignore URL bar height shifts)
+        let lastWidth = window.innerWidth;
+        window.addEventListener('resize', () => {
+            if (window.innerWidth !== lastWidth) {
+                lastWidth = window.innerWidth;
+                adjustCameraForMobile();
+            }
+        });
 
         animate();
     </script>
