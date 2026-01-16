@@ -395,11 +395,17 @@
                 width: 230px;
                 padding: 15px;
                 top: 10px;
-                right: -270px;
+                right: 0px;
+                transform: translateX(250px);
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+                background: rgba(20, 40, 60, 0.95);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
 
             #tankHUD.visible {
-                right: 10px;
+                transform: translateX(-10px);
+                right: 0px;
             }
 
             .hud-header {
@@ -425,11 +431,13 @@
         #tankHUD {
             position: fixed;
             top: 20px;
-            right: -320px;
+            right: 0px;
+            transform: translateX(350px);
             /* Hidden off-screen */
             width: 280px;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             padding: 20px;
             border-radius: 12px;
             color: white;
@@ -437,13 +445,14 @@
             z-index: 1000;
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: right 0.3s ease-in-out;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             max-height: 80vh;
             overflow-y: auto;
+            will-change: transform;
         }
 
         #tankHUD.visible {
-            right: 20px;
+            transform: translateX(-20px);
             /* Slide in */
         }
 
@@ -1100,13 +1109,20 @@
             });
 
             // Bind Events (Real-time updates)
+            let populationTimeout;
+            const updateTank = () => {
+                clearTimeout(populationTimeout);
+                populationTimeout = setTimeout(() => {
+                    clearTank(); populateTank();
+                }, 50);
+            };
 
             // Checkboxes
             container.querySelectorAll('.hud-check').forEach(el => {
                 el.onchange = (e) => {
                     fishConfig[e.target.dataset.fish].active = e.target.checked;
                     renderHUD(); // Re-render to show/hide slider
-                    clearTank(); populateTank();
+                    updateTank();
                 };
             });
 
@@ -1119,8 +1135,7 @@
                     document.getElementById(`val-${fish}`).innerText = val;
                 };
                 el.onchange = (e) => {
-                    // Update physics on release to save performance
-                    clearTank(); populateTank();
+                    updateTank();
                 }
             });
 
