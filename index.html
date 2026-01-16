@@ -846,12 +846,12 @@
 
         // Default Config
         const defaultFishConfig = {
-            "Hammerhead Shark": { active: true, count: 1, min: 1, max: 4 },
-            "Shark": { active: true, count: 1, min: 1, max: 4 },
-            "Manta": { active: true, count: 1, min: 1, max: 4 },
+            "Hammerhead Shark": { active: true, count: 1, min: 1, max: 2 },
+            "Shark": { active: true, count: 1, min: 1, max: 2 },
+            "Manta": { active: true, count: 1, min: 1, max: 2 },
             "Tetra": { active: true, count: 4, min: 1, max: 8 },
-            "Squirrelfish": { active: true, count: 2, min: 1, max: 6 },
-            "Angelfish": { active: true, count: 1, min: 1, max: 6 }
+            "Squirrelfish": { active: true, count: 2, min: 1, max: 4 },
+            "Angelfish": { active: true, count: 1, min: 1, max: 4 }
         };
 
         let fishConfig = JSON.parse(JSON.stringify(defaultFishConfig));
@@ -913,6 +913,19 @@
             // Remove existing fish (not Rave Squad)
             for (const fish of fishSchool) {
                 scene.remove(fish);
+                // Explicitly dispose of children resources to free GPU memory
+                fish.traverse((child) => {
+                    if (child.isMesh) {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) {
+                            if (Array.isArray(child.material)) {
+                                child.material.forEach(m => m.dispose());
+                            } else {
+                                child.material.dispose();
+                            }
+                        }
+                    }
+                });
             }
             fishSchool.length = 0; // Clear array
         }
