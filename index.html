@@ -779,9 +779,12 @@
         const loader = new GLTFLoader();
         const fishSchool = [];
         const raveSquad = [];
+        let populationGeneration = 0; // Guard for async loads
 
         function addFish(fileName, scale, speed, timeOffset, yOffset, isRaveOnly = false) {
+            const thisGen = populationGeneration; // Capture current ID
             loader.load(`assets/${fileName}`, function (gltf) {
+                if (thisGen !== populationGeneration) return; // Discard if tank was cleared
                 const fish = gltf.scene;
                 fish.scale.set(scale, scale, scale);
 
@@ -843,12 +846,12 @@
 
         // Default Config
         const defaultFishConfig = {
-            "Hammerhead Shark": { active: true, count: 1, min: 1, max: 8 },
-            "Shark": { active: true, count: 1, min: 1, max: 8 },
-            "Manta": { active: true, count: 1, min: 1, max: 8 },
+            "Hammerhead Shark": { active: true, count: 1, min: 1, max: 4 },
+            "Shark": { active: true, count: 1, min: 1, max: 4 },
+            "Manta": { active: true, count: 1, min: 1, max: 4 },
             "Tetra": { active: true, count: 4, min: 1, max: 8 },
-            "Squirrelfish": { active: true, count: 2, min: 1, max: 8 },
-            "Angelfish": { active: true, count: 1, min: 1, max: 8 }
+            "Squirrelfish": { active: true, count: 2, min: 1, max: 6 },
+            "Angelfish": { active: true, count: 1, min: 1, max: 6 }
         };
 
         let fishConfig = JSON.parse(JSON.stringify(defaultFishConfig));
@@ -906,10 +909,10 @@
         };
 
         function clearTank() {
+            populationGeneration++; // Invalidate all pending loads
             // Remove existing fish (not Rave Squad)
             for (const fish of fishSchool) {
                 scene.remove(fish);
-                // disposing logic if memory was an issue, but for now just removing from scene
             }
             fishSchool.length = 0; // Clear array
         }
