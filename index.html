@@ -1085,6 +1085,12 @@
             if (!container) return; // Safety check
             container.innerHTML = '';
 
+            // --- SAFARI MOBILE DETECTION ---
+            // Simple check: user agent contains 'Safari' + 'Mobile' but NOT 'Chrome' (Chrome on iOS has 'CriOS' but acts like Safari generally, better safe to lock all iOS webkit)
+            const ua = navigator.userAgent;
+            const isIOS = /iPhone|iPad|iPod/.test(ua);
+            const isSafariMobile = isIOS && /WebKit/.test(ua) && !/CriOS/.test(ua); // Locking down strictly on iOS WebKit
+
             // --- ⏱️ GLOBAL TANK SPEED ---
             const speedRow = document.createElement('div');
             speedRow.className = 'hud-row';
@@ -1100,11 +1106,18 @@
             `;
             container.appendChild(speedRow);
 
+            if (isIOS) {
+                const warn = document.createElement('div');
+                warn.style.fontSize = '10px';
+                warn.style.color = '#ff9900';
+                warn.style.marginBottom = '10px';
+                warn.style.textAlign = 'center';
+                warn.innerText = '⚠️ Controls Locked on iOS to Prevent Crash';
+                container.appendChild(warn);
+            }
+
             Object.keys(fishConfig).forEach(key => {
                 const conf = fishConfig[key];
-                // No fish are hidden in Dave's version
-
-
                 const row = document.createElement('div');
                 row.className = 'hud-row';
 
@@ -1113,15 +1126,18 @@
                 let html = `<div class="hud-label"><span>${icon}</span> ${key}</div>`;
                 html += `<div class="hud-controls">`;
 
-                // Toggle + Slider for all fish
-                // Checkbox
-                html += `<input type="checkbox" class="hud-check" data-fish="${key}" ${conf.active ? 'checked' : ''}>`;
-
-                if (conf.active && conf.min !== undefined && conf.max !== undefined) {
-                    html += `
-                    <input type="range" class="hud-slider" data-fish="${key}" min="${conf.min}" max="${conf.max}" value="${conf.count}">
-                    <span class="hud-value" id="val-${key}">${conf.count}</span>
-                    `;
+                if (isIOS) {
+                    // LOCKED STATE
+                    html += `<span style="font-size:10px; opacity:0.6;">${conf.count} (Locked)</span>`;
+                } else {
+                    // UNLOCKED STATE
+                    html += `<input type="checkbox" class="hud-check" data-fish="${key}" ${conf.active ? 'checked' : ''}>`;
+                    if (conf.active && conf.min !== undefined && conf.max !== undefined) {
+                        html += `
+                        <input type="range" class="hud-slider" data-fish="${key}" min="${conf.min}" max="${conf.max}" value="${conf.count}">
+                        <span class="hud-value" id="val-${key}">${conf.count}</span>
+                        `;
+                    }
                 }
 
                 html += `</div>`;
